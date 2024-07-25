@@ -1,0 +1,114 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: firefoxsync
+  namespace: ffsync
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: firefoxsync
+  template:
+    metadata:
+      labels:
+        app: firefoxsync
+    spec:
+      containers:
+        # Storage server
+        - name: syncstorage
+          image: mozilla/syncstorage-rs:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SYNC_HOST
+              value: "0.0.0.0"
+            - name: SYNC_HUMAN_LOGS
+              value: "1"
+            - name: SYNC_MASTER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: sync-secrets
+                  key: SYNC_MASTER_SECRET
+            - name: SYNC_SYNCSTORAGE__DATABASE_URL
+              value: "mysql://$(MARIADB_USER):$(MARIADB_PASSWORD)@syncstorage-db:3306/syncstorage"
+            - name: SYNC_TOKENSERVER__ENABLED
+              value: "true"
+            - name: SYNC_TOKENSERVER__RUN_MIGRATIONS
+              value: "true"
+            - name: SYNC_TOKENSERVER__NODE_TYPE
+              value: "mysql"
+            - name: SYNC_TOKENSERVER__DATABASE_URL
+              value: "mysql://$(MARIADB_USER):$(MARIADB_PASSWORD)@tokenserver-db:3306/tokenserver"
+            - name: SYNC_TOKENSERVER__FXA_EMAIL_DOMAIN
+              value: "api.accounts.firefox.com"
+            - name: SYNC_TOKENSERVER__FXA_OAUTH_SERVER_URL
+              value: "https://oauth.accounts.firefox.com/v1"
+            - name: SYNC_TOKENSERVER__FXA_METRICS_HASH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: sync-secrets
+                  key: METRICS_HASH_SECRET
+            - name: SYNC_TOKENSERVER__ADDITIONAL_BLOCKING_THREADS_FOR_FXA_REQUESTS
+              value: "2"
+
+        # Database
+        - name: syncstorage-db
+          image: mariadb:latest
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MARIADB_RANDOM_ROOT_PASSWORD
+              value: "true"
+            - name: MARIADB_DATABASE
+              value: "syncstorage"
+            - name: MARIADB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: sync-db-secrets
+                  key: MARIADB_USER
+            - name: MARIADB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sync-db-secrets
+                  key: MARIADB_PASSWORD
+            - name: MARIADB_AUTO_UPGRADE
+              value: "true"
+          volumeMounts:
+            - name: syncstorage-db-storage
+              mountPath: /var/lib/mysql
+
+        # Token server
+        - name: tokenserver-db
+          image: mariadb:latest
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MARIADB_RANDOM_ROOT_PASSWORD
+              value: "true"
+            - name: MARIADB_DATABASE
+              value: "tokenserver"
+            - name: MARIADB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: token-db-secrets
+                  key: MARIADB_USER
+            - name: MARIADB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: token-db-secrets
+                  key: MARIADB_PASSWORD
+            - name: MARIADB_AUTO_UPGRADE
+              value: "true"
+          volumeMounts:
+            - name: tokenserver-db-storage
+              mountPath: /var/lib/mysql
+
+      volumes:
+        - name: syncstorage-db-storage
+          persistentVolumeClaim:
+            claimName: syncstorage-db-pvc
+        - name: tokenserver-db-storage
+          persistentVolumeClaim:
+            claimName: tokenserver-db-pvc
+

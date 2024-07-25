@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: technitium-dns
+  namespace: technitium
+spec:
+  selector:
+    app: technitium-dns
+  ports:
+  - name: web
+    port: 80
+    targetPort: 5380
+  - name: dns
+    port: 53
+    targetPort: 53
+  type: LoadBalancer

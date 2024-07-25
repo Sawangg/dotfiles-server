@@ -1,0 +1,7 @@
+---
+apiVersion: apps/v1
+kind: Namespace
+metadata:
+  name: ffsync
+  labels:
+    name: firefoxsync

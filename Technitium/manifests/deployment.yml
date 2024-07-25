@@ -1,0 +1,31 @@
+---
+apiVersion: v1
+kind: Deployment
+metadata:
+  name: technitium-dns
+  namespace: technitium
+  labels:
+    app: technitium
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: technitium-dns
+  template:
+    metadata:
+      labels:
+        app: technitium-dns
+    spec:
+      containers:
+      - name: technitium-dns
+        image: technitium/dns-server:latest
+        ports:
+        - containerPort: 5380 # Web interface port
+        - containerPort: 53   # DNS port
+        volumeMounts:
+        - name: technitium-data
+          mountPath: /var/lib/dns
+      volumes:
+      - name: technitium-data
+        persistentVolumeClaim:
+          claimName: technitium-pvc

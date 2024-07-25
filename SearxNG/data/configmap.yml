@@ -1,0 +1,28 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: searxng-config
+  namespace: searxng
+data:
+  settings.yml: |
+    # see https://docs.searxng.org/admin/settings/settings.html#settings-use-default-settings
+    use_default_settings: true
+    engines:
+      - name: soundcloud
+        disabled: true
+    server:
+      secret_key: "z?@-zS6-x>N:|$#Z4gO&rvs?[;%7Z;M"  # change this with yours!
+      image_proxy: true
+    ui:
+      static_use_hash: true
+      infinite_scroll: true
+    redis:
+      url: redis://redis:6379/0
+  limiter.toml: |
+    # This configuration file updates the default configuration file
+    # See https://github.com/searxng/searxng/blob/master/searx/limiter.toml
+
+    [botdetection.ip_limit]
+    # activate link_token method in the ip_limit method
+    link_token = true

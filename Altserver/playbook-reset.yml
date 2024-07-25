@@ -1,0 +1,19 @@
+---
+- name: Reset Altserver
+  hosts: all
+  tasks:
+    - name: Copy data folder to target hosts
+      copy:
+        src: ./data/
+        dest: /tmp/data/
+        mode: '0755'
+
+    - name: Delete namespace
+      k8s:
+        state: absent
+        src: /tmp/data/namespace.yml
+
+    - name: Cleanup the data folder
+      file:
+        path: /tmp/data/
+        state: absent
